@@ -3,4 +3,5 @@ coverage/
 spec/support/example_private_key.pem
 /gemfiles/*.lock
 .idea/
+*.iml
 .bundle/
