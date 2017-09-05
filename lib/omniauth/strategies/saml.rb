@@ -35,7 +35,14 @@ module OmniAuth
         authn_request = OneLogin::RubySaml::Authrequest.new
 
         with_settings do |settings|
-          redirect(authn_request.create(settings, additional_params_for_authn_request))
+          if options.request_binding == :post
+            saml_request = OneLogin::RubySaml::Authrequest.new
+            post_params = saml_request.create_params(settings, request.params)
+            form_html = generate_request_post_binding_form(settings.idp_sso_target_url, post_params)
+            Rack::Response.new(form_html, 200, { "Content-Type" => "text/html" }).finish
+          else
+            redirect(authn_request.create(settings, additional_params_for_authn_request))
+          end
         end
       end
 
@@ -288,6 +295,19 @@ module OmniAuth
             end
           end
         end
+      end
+
+      def generate_request_post_binding_form(login_url, encoded_data)
+        input_markup = encoded_data.map {|n,v| "<input type=\"hidden\" name=\"#{n}\" value=\"#{v}\">" }.join
+
+        <<-HTML
+          <form name="postBindingForm" method="post" action="#{login_url}">
+            #{input_markup}
+          </form>
+          <script type="text/javascript">
+            document.postBindingForm.submit()
+          </script>
+        HTML
       end
     end
   end
